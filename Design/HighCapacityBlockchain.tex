@@ -1,0 +1,148 @@
+\documentclass{article}
+\usepackage{authblk}
+\usepackage{tikz}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{pst-node,pst-plot}
+\usepackage{svg}
+\usepackage{listings}
+\lstset{
+	basicstyle=\small\ttfamily,
+	columns=flexible,
+	breaklines=true
+}
+
+%opening
+\title{Towards a high capacity blockchain}
+\author{Shahpour Moavenat}
+\affil{Lykke Corp}
+
+\begin{document}
+	
+\maketitle
+	
+\begin{abstract}
+	It is desirable that a blockchain could support a large number of transactions for example Lykke\footnote{http://www.lykke.com} initially held a competition to support 100,000 transactions per second or Visa can handle about 56,000\footnote{https://usa.visa.com/dam/VCOM/download/corporate/media/visa-fact-sheet-Jun2015.pdf} transaction per second.
+	In this article a method is presented to handle such number by a compression offered by zkSNARKs\footnote{zero-knowledge succinct non-interactive arguments of knowledge}.
+\end{abstract}
+
+\section{Introduction}
+When number of transactions which a blockchain should support on-chain goes high, at least two problems start to show more; 1-The storage and transfer of large amounts of data 2- The processing power required to verify all transactions.
+
+One solution would be to look after methods which reduce the amount of data which is required to be transfered. In this direction zkSNARKs are a possible solution. In the current proposed method zkSNARKs are used as a method for data compression, instead its other use of hiding the data. Also if we assume blockchain as a sequence of state transitions, the proposed method could be thought of as method to just record a subset of state transitions on the blockchain, and provide proof that a transaction has taken part in a state transition which has led to the recorded states on the blockchain.
+
+\subsection{The function}
+We should design a function that if it's correct execution could be proved, it will show that a (of probably large) set of transactions transform current state of  blockchain to its next state. A possible design could be as follows:
+
+The inputs:
+\begin{enumerate}
+\item The input state which is the current blockchain state (iState)
+\item The hash of input state (iStateHash)
+\item The output state which the operations transfer the input state to, the final state of blockchain (oState)
+\item The hash of output state (oStateHash)
+\item Collection of transactions performing state transitions (txCollection)
+\item The hash of transaction collection (txCollectionHash)
+\end{enumerate}
+	
+From the list of above inputs, inputs other than the 3 hashes are private inputs.
+
+A method to keep the blockchain states will be Merkle Patricia Ties [3], which allow insertion and deletion of records in logarithmic scale time and the hashes will be kept at the root.
+
+The function which its result of execution should be proved to be true is:
+
+\begin{lstlisting}
+function(iState, iStateHash, stateDeletions, stateDeletionsHash, stateAdditions, stateAdditionsHash, oState, oStateHash, txCollection, txCollectionHash, previousMinerOutputScript)
+{
+	Hash(iState) = iStateHash and
+	Hash(oSate) = oStateHash and
+	Hash(txCollection) = txCollectionHash and
+	Hash(stateDeletions) = stateDeletionsHash and
+	Hash(stateAdditions) = stateAdditionsHash and 
+	stateDeletions are what txCollection consume and
+	stateAdditions are what txCollection generate and
+	There is exactly one transaction in txCollection, with no input and which its output is previousMinerOutputScript and 
+	There is at most one transaction which rewards the proof maker (no input) and output not equal to previousMinerOutputScript and
+	Except the two above transactions every transaction in txCollection is a valid transaction (for example signed correctly, and transfers an input in input state) and
+	All tx in txCollection have independent inputs and
+	There is no redundant transactions in txCollection and
+	If we delete the transaction inputs from iState, and add transaction outputs to iState, we will reach to oState
+}
+\end{lstlisting}
+
+Although the verifier will probably have the iState (The current blockchain) and its root hash and can itself verify Hash(iState) = iStateHash, if we do not perform this check in the proof, it may be that the prover has started with a fake state and had arrived to the proofed state.
+
+\section{Mining}
+
+The mined blocks, at least will hold the hashes and the zkSNARK proofs. This will make the information contained in block as small as possible and at the sametime providing a valid transition of states. The actual collections of states, additions, deletions and transactions will be available for download off the chain, on the request.
+
+Miners at the time of mining will download input states and output states and will verify:
+
+\begin{enumerate}
+\item Collections of input states do not overlap (there is no double spend), if just one collection 
+\item Input states are actually a subset of current blockchain state (Should it be moved to the zk-SNARK function?)
+\item The proof is actually correct, which means the output state is actually gets generated
+\end{enumerate}
+
+The miner reward should be somehow shared between who actually does mining and the party generating proof for the transactions since the proof generation will be also a computational intensive task.
+There should also exist transaction fees to prevent network from being spammed, the sum of these fees could also be shared between miners and proof generators.
+
+Since when mining is being done, proof generation has ended, the coinbase transaction which sends rewards to the miners could not be included; a possible solution to this would be for the miners to provide the coinbase output script, and in the next block, when proof is generated, the transaction paying to this output script will be included.
+
+The used hash algorithm is better to be a one which prevents centralization, for example a memory hard one like scrypt or equihash.
+
+\section{Other proofs}
+
+Since the complete data for the blockchain will be large, it would help to have proofs also for each piece of information for each beneficiary, for example if a transaction belongs to a transaction collection, the function to prove is something like following:
+
+\begin{verbatim}
+function(tx, txCollection, txCollectionHash)
+{
+	Hash(txCollection) = txCollectionHash and
+	tx is a member of txCollection 
+}
+\end{verbatim}
+
+Thus by having this proof, tx, txCollectionHash (which is mined in blockchain) and keeping txCollection as private input; a beneficiary can proof his/her transaction is mined.
+
+3- Merkle tree for providing the concise information
+
+\section{Attacks}
+
+\begin{enumerate}
+\item Lots of penny transactions: An attack could occur in such a way that lots of penny transactions is generated to spam the network, for example assume two addresses which pass the same amount of tokens to each other, each time deducing the minimum fee. This can generate lots of valid transactions, which could overload the network, when released to network at the same time. Some ideas that may work is some kind of transactions prioritizing (for example by the time they have been broadcasted) or by the fee they pay. [Also the mechanism for handling this could be studied in detail in other blockchains for example in Bitcoin or RailBlocks]
+
+\item Censorship: The party building zkSNARK proof can select some transactions not to include in the states and proofs. This should be somehow covered.  For example creating incentive for miners to include multiple proof for separate state transition paths (miners should probably check states input states do not collide, for example for a justifiable fee.
+
+\item There is a question why the large unhashed version of input state(s), output state(s), transaction collection should be stored and provided to the parties requesting it. Probably an incentive mechanism could be designed for doing so. A possible good candidate would be to allocated a portion of mined coins, for this purpose.
+
+\end{enumerate}
+
+\section{Comparison with lightning}
+
+Lightning solves the scalability problem in a peer-to-peer method but has some problems as locking the funds in the channel. The described method in this article instead solves the problem is a semi centralized way (for the processing power required to generate the state transition proof, if the to be designed method could not be distributed among nodes). For the concerns regarding centralization, it would be better to advance the described method to be decentralized more.
+
+\section{Implementation}
+
+Probably the most challenging problem in the implementation would be the efficient proof generation for the above mentioned function. \cite{zkCluster} and \cite{scalableZKSNARK} have some ideas about improving the performance for proof generation.
+
+\begin{thebibliography}{9}
+	
+	\bibitem{zkCluster}
+	Chiesa, Alessandro, Eran Tromer, and Madars Virza,
+	\textit{Cluster computing in zero knowledge},
+	Annual International Conference on the Theory and Applications of Cryptographic Techniques, Springer, Berlin, Heidelberg, 2015. pp. 371-403.
+	
+	\bibitem{scalableZKSNARK}
+	Ben-Sasson, Eli, Alessandro Chiesa, Eran Tromer, and Madars Virza,
+	\textit{Scalable zero knowledge via cycles of elliptic curves}, Algorithmica 79, no. 4 (2017): 1102-1160.
+	
+	\bibitem{patriciaTrie}
+	Merkle Patricia Trie: https://github.com/ethereum/wiki/wiki/Patricia-Tree
+	
+	\bibitem{sha3TreeHash}
+	
+	
+	
+\end{thebibliography}
+		
+\end{document}
