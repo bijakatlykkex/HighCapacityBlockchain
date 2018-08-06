@@ -71,6 +71,11 @@ function(iState, iStateHash, stateDeletions, stateDeletionsHash, stateAdditions,
 
 Although the verifier will probably have the iState (The current blockchain) and its root hash and can itself verify Hash(iState) = iStateHash, if we do not perform this check in the proof, it may be that the prover has started with a fake state and had arrived to the proofed state.
 
+\subsection{Recursive function}
+
+One of the methods used for scaling the proof generation as described in \cite{scalableZKSNARK}, is to change the function in such a way that its execution could be incrementally proved in multiple steps and each step proof will depend on verifying the proof of previous step.
+[TODO]
+
 \section{Mining}
 
 The mined blocks, at least will hold the hashes and the zkSNARK proofs. This will make the information contained in block as small as possible and at the sametime providing a valid transition of states. The actual collections of states, additions, deletions and transactions will be available for download off the chain, on the request.
@@ -117,15 +122,27 @@ Thus by having this proof, tx, txCollectionHash (which is mined in blockchain) a
 
 \end{enumerate}
 
-\section{Comparison with lightning}
+\section{Comparison with some other solutions}
 
-Lightning solves the scalability problem in a peer-to-peer method but has some problems as locking the funds in the channel. Another feature of peer-to-peer methods like lightning which may be seen as major problem for would be that of regulation since there could not be an easy points of monitor/control for fast funds transfer.
+\subsection{Peer to peer (Offchain) solutions}
 
-The described method in this article instead solves the problem is a semi centralized way (for the processing power required to generate the state transition proof, if the to be designed method could not be distributed among nodes). For the concerns regarding centralization, it would be better to advance the described method to be decentralized more.
+Offchain methods like Lightning solve the scalability problem in a peer-to-peer method but has some problems as locking the funds in the channel. Another feature of peer-to-peer methods like lightning which may be seen as a major problem would be that of regulation, since there could not be an easy points of monitor/control for fast funds transfer.
+
+The described method in this article instead solves the problem is a semi centralized way (for the processing power required to generate the state transition proof, if the method to be designed could not be distribute the processing load over proof generating nodes). For the concerns regarding centralization, it would be better to advance the described method to be decentralized more.
+
+\subsection{Sharding}
+[TODO]
+Can SNARK Help?\cite{sharding}
 
 \section{Implementation}
 
 Probably the most challenging problem in the implementation would be the efficient proof generation for the above mentioned function. \cite{zkCluster} and \cite{scalableZKSNARK} have some ideas about improving the performance for proof generation.
+
+\section{Acknowledgment}
+
+I like to thank my colleagues from Lykke who provided expertise that assisted the research, although they may not agree with all of the interpretations/conclusions of this paper.
+
+I thank Oleg Zhelenkov, for a discussion which led to the current idea. I thank Mihail Nikulin for various review questions.
 
 \begin{thebibliography}{9}
 	
@@ -142,7 +159,10 @@ Probably the most challenging problem in the implementation would be the efficie
 	Merkle Patricia Trie: https://github.com/ethereum/wiki/wiki/Patricia-Tree
 	
 	\bibitem{sha3TreeHash}
+	TODO
 	
+	\bibitem{sharding}
+	Ethereum Sharding FAQs: https://github.com/ethereum/wiki/wiki/Sharding-FAQs\#can-snarks-and-starks-help
 	
 	
 \end{thebibliography}
