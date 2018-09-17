@@ -77,6 +77,8 @@ Although the verifier will probably have the iState (The current blockchain) and
 
 One of the methods used for scaling the proof generation as described in \cite{scalableZKSNARK}, is to change the function in such a way that its execution could be incrementally proved in multiple steps and each step proof will depend on verifying the proof of previous step.
 
+[Under consideration]
+
 Each state of the iterative steps can consist of something like following, which if proof id generated for its trueness, it could be concluded that based of the provided proof (previous step of induction) and the transaction (the current step), iRecordedState goes to oState, by a collection of transactions:
 
 \begin{lstlisting}
