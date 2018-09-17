@@ -13,7 +13,7 @@
 }
 
 %opening
-\title{Towards a high capacity blockchain}
+\title{Towards a high capacity blockchain (Work in progress)}
 \author{Shahpour Moavenat}
 \affil{Lykke Corp}
 
@@ -30,6 +30,8 @@
 When number of transactions which a blockchain should support on-chain goes high, at least two problems start to show more; 1-The storage and transfer of large amounts of data 2- The processing power required to verify all transactions.
 
 One solution would be to look after methods which reduce the amount of data which is required to be transfered. In this direction zkSNARKs are a possible solution. In the current proposed method zkSNARKs are used as a method for data compression, instead its other major use of hiding the data. Also if we assume blockchain as a sequence of state transitions, the proposed method could be thought of as a method to just record a subset of states and proofs that these states change by a set of valid transactions. In order to show a specific transaction has been mined, a separate proof outside of blockchain will be provided that shows the specific transaction was involved in the state transitions recorded on the blockchain.
+
+Although the discussed results would be general, the intention is to achieve decentralized exchange operations with help of blockchain by supporting various transaction types (for example an order transaction that would be further matched).
 
 \subsection{The function}
 We should design a function that if it's correct execution could be proved, it will show that a (of probably large) set of transactions transform current state of  blockchain to its next state. A possible design could be as follows:
@@ -74,7 +76,23 @@ Although the verifier will probably have the iState (The current blockchain) and
 \subsection{Recursive function}
 
 One of the methods used for scaling the proof generation as described in \cite{scalableZKSNARK}, is to change the function in such a way that its execution could be incrementally proved in multiple steps and each step proof will depend on verifying the proof of previous step.
-[TODO]
+
+Each state of the iterative steps can consist of something like following, which if proof id generated for its trueness, it could be concluded that based of the provided proof (previous step of induction) and the transaction (the current step), iRecordedState goes to oState, by a collection of transactions:
+
+\begin{lstlisting}
+function(iState, iStateHash, oState, oStateHash, iPrevStateHash, transaction, txHash, prevTxHash, iRecordedStateHash, proof, proofHash, prevProofHash)
+{
+Hash(iState) = iStateHash and
+Hash(oSate) = oStateHash and
+transaction moves iState to oState and
+verify that proof is valid proof for the fact that a state with hash of iRecordedState goes to a state with hash of iStateHash by transactions in a collection for which the hash is iTxColection and
+adding transaction to prevTxCollection and computing hash will return oTxCollectionHash and
+prevTxCollection hashes to iTxCollectionHash
+
+verify that proof is valid one for the function(iPrevStateHash, iStateHash, prevTxHash, iRecordedStateHash, prevProofHash)
+}
+
+\end{lstlisting}
 
 \section{Mining}
 
@@ -131,8 +149,7 @@ Offchain methods like Lightning solve the scalability problem in a peer-to-peer 
 The described method in this article instead solves the problem is a semi centralized way (for the processing power required to generate the state transition proof, if the method to be designed could not be distribute the processing load over proof generating nodes). For the concerns regarding centralization, it would be better to advance the described method to be decentralized more.
 
 \subsection{Sharding}
-[TODO]
-Can SNARK Help?\cite{sharding}
+Sharding seems to be a promising method to address scalability for blockchains, at the time of this writing it is being implemented for Ethereum blockchain. It should be further studied how much it would be suitable for implementing exchange operations, for example the issues for cross shard communication (if a shard would be created for each asset for example) or the possible considerations about the implementation of proof-of-stake (which Ethereum probably will be) or proof-of-work (which current article is based on). Also there are some agreements, that SNARKs can help sharding too \cite{sharding}.
 
 \section{Implementation}
 
